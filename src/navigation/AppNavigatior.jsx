@@ -15,6 +15,12 @@ import WalletScreen from '../components/screens/WalletScreen';
 import RechargeScreen from '../components/screens/RechargeScreen';
 import WithdrawScreen from '../components/screens/WithdrawScreen';
 import PaymentScreen from '../components/screens/PaymentScreen';
+import StockDetailScreen from '../components/screens/StockDetailScreen';
+import StockHoldingsScreen from '../components/screens/StockHoldingsScreen';
+import AccountSettingsScreen from '../components/screens/AccountSettingsScreen';
+import PrivacySecurityScreen from '../components/screens/PrivacySecurityScreen';
+import NotificationsScreen from '../components/screens/NotificationsScreen';
+import AppGuideScreen from '../components/screens/AppGuideScreen';
 
 const Stack = createStackNavigator();
 
@@ -57,7 +63,7 @@ const AppNavigator = () => {
 
                 <Stack.Screen name="Indices" component={IndicesScreen} options={{ title: 'Market Indices', headerShown: false }} />
 
-                <Stack.Screen name="Notification" component={NotificationScreen} options={{ title: 'Notifications' }} />
+                <Stack.Screen name="Notification" component={NotificationScreen} options={{ title: 'Notifications', headerShown: false }} />
 
                 <Stack.Screen name="Setting" component={SettingScreen} options={{ title: 'Settings' }} />
 
@@ -69,6 +75,15 @@ const AppNavigator = () => {
                 <Stack.Screen name="Recharge" component={RechargeScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Payment" component={PaymentScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Withdraw" component={WithdrawScreen} options={{ headerShown: false }} />
+
+                <Stack.Screen name="StockDetail" component={StockDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                <Stack.Screen name="StockHolding" component={StockHoldingsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+
+                <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                <Stack.Screen name="HelpSupport" component={AppGuideScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+
 
             </Stack.Navigator>
         </NavigationContainer>

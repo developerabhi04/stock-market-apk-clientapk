@@ -92,7 +92,7 @@ const NOTIFICATIONS_DATA = [
     },
 ];
 
-const NotificationScreen = ({ navigation }) => {
+const NotificationsScreen = ({ navigation }) => {
     const [notifications, setNotifications] = useState(NOTIFICATIONS_DATA);
     const [filter, setFilter] = useState('all');
 
@@ -423,4 +423,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default NotificationScreen;
+export default NotificationsScreen;

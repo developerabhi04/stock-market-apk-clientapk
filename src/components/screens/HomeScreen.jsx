@@ -150,7 +150,16 @@ const HomeScreen = ({ navigation }) => {
 
         // Regular featured item
         return (
-            <TouchableOpacity style={styles.featuredCard} activeOpacity={0.9}>
+            <TouchableOpacity style={styles.featuredCard} activeOpacity={0.9}
+                onPress={() => navigation.navigate('StockDetail', {
+                    stock: {
+                        name: item.name,
+                        value: item.value,
+                        change: item.change,
+                        isPositive: item.isPositive,
+                    }
+                })}
+            >
                 <View style={styles.featuredHeader}>
                     <View style={[styles.featuredIcon, { backgroundColor: item.isPositive ? COLORS.successLight : COLORS.errorLight }]}>
                         <Icon name={item.icon} size={22} color={item.isPositive ? COLORS.success : COLORS.error} />
@@ -202,11 +211,11 @@ const HomeScreen = ({ navigation }) => {
                             <Icon name="bell-outline" size={22} color={COLORS.textPrimary} />
                             <View style={styles.notificationBadge} />
                         </TouchableOpacity>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={styles.iconButton}
                             onPress={() => navigation.navigate('Setting')}>
                             <Icon name="cog-outline" size={22} color={COLORS.textPrimary} />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                         <TouchableOpacity
                             style={styles.profileButton}
                             onPress={() => navigation.navigate('Profile')}>
