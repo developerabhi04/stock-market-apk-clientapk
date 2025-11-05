@@ -5,11 +5,12 @@ import { COLORS } from '../../constants/colors';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const settings = [
+    { icon: 'reorder', label: 'Order', route: 'TopOrder' },
     { icon: 'bank', label: 'Bank Account', route: 'AccountSettings' },
     { icon: 'shield-check', label: 'Privacy & Security', route: 'PrivacySecurity' },
     { icon: 'bell', label: 'Notifications', route: 'Notifications' },
     { icon: 'help-circle', label: 'Help & Support', route: 'HelpSupport' },
-    { icon: 'invite-circle', label: 'Invite', route: 'HelpSupport' },
+    { icon: 'share', label: 'Invite', route: 'HelpSupport' },
 ];
 
 export default function ProfileScreen({ navigation }) {
@@ -35,7 +36,7 @@ export default function ProfileScreen({ navigation }) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}>
 
-            
+
 
             {/* Profile Header */}
             <View style={styles.profileHeader}>
@@ -80,6 +81,17 @@ export default function ProfileScreen({ navigation }) {
                 ))}
             </View>
 
+
+
+            {/* Logout Button */}
+            <View style={styles.actions}>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+                    <Icon name="logout" size={20} color={COLORS.error} />
+                    <Text style={styles.logoutText}>Logout</Text>
+                </TouchableOpacity>
+            </View>
+
+
             {/* App Info Section */}
             <View style={styles.appInfoSection}>
                 {/* <Text style={styles.sectionTitle}>App Information</Text> */}
@@ -88,14 +100,6 @@ export default function ProfileScreen({ navigation }) {
                     <Text style={styles.infoLabel}>Version</Text>
                     <Text style={styles.infoValue}>1.0.0</Text>
                 </View>
-            </View>
-
-            {/* Logout Button */}
-            <View style={styles.actions}>
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-                    <Icon name="logout" size={20} color={COLORS.error} />
-                    <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
             </View>
         </ScrollView>
     );
@@ -213,7 +217,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.surface,
         borderRadius: 12,
         padding: 16,
-        marginBottom: 24,
+        marginTop: 24,
         borderWidth: 1,
         borderColor: COLORS.border,
     },

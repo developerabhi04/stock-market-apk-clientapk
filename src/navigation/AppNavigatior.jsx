@@ -21,6 +21,7 @@ import AccountSettingsScreen from '../components/screens/AccountSettingsScreen';
 import PrivacySecurityScreen from '../components/screens/PrivacySecurityScreen';
 import NotificationsScreen from '../components/screens/NotificationsScreen';
 import AppGuideScreen from '../components/screens/AppGuideScreen';
+import BuyStockScreen from '../components/screens/BuyStockScreen';
 
 const Stack = createStackNavigator();
 
@@ -84,7 +85,11 @@ const AppNavigator = () => {
                 <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
                 <Stack.Screen name="HelpSupport" component={AppGuideScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
 
-
+                <Stack.Screen
+                    name="BuyStock"
+                    component={BuyStockScreen}
+                    options={{ headerShown: false }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );
