@@ -19,8 +19,8 @@ const COLORS = {
     text: '#FFFFFF',
     textSecondary: '#999999',
     border: '#2A2A2A',
-    primary: '#00C896',
-    primaryLight: 'rgba(0, 200, 150, 0.15)',
+    primary: '#FF5252',
+    primaryLight: 'rgba(255, 82, 82, 0.15)',
     success: '#00C896',
     successLight: 'rgba(0, 200, 150, 0.15)',
     error: '#FF5252',
@@ -29,23 +29,28 @@ const COLORS = {
     overlay: 'rgba(0, 0, 0, 0.85)',
 };
 
-const BuyStockScreen = ({ navigation, route }) => {
+const SellStockScreen = ({ navigation, route }) => {
     const { stock } = route?.params || {
         stock: {
             name: 'NIFTY 50',
             value: '25597.65',
             change: '-0.64%',
             isPositive: false,
+            holdings: 5000, // Available holdings
+            avgPrice: 24000.00, // Average purchase price
         },
     };
 
+   
     const [priceLimit, setPriceLimit] = useState('');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderId, setOrderId] = useState('');
 
-    const walletBalance = 12500;
-    const minimumTradeAmount = 500;
+    // User holdings data
+    const availableHoldings = stock.holdings || 50;
+    const avgPurchasePrice = stock.avgPrice || parseFloat(stock.value) * 0.95;
+    const minimumSellAmount = 500;
 
     // Animation refs
     const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -78,27 +83,38 @@ const BuyStockScreen = ({ navigation, route }) => {
         setPriceLimit('');
     };
 
+    const handleMaxAmount = () => {
+        const maxSellValue = availableHoldings * parseFloat(stock.value);
+        setPriceLimit(maxSellValue.toString());
+    };
+
     // Generate order ID
     const generateOrderId = () => {
         const timestamp = Date.now();
         const random = Math.floor(Math.random() * 10000);
-        return `ORD${timestamp}${random}`;
+        return `SELL${timestamp}${random}`;
     };
 
     // Calculations
     const enteredAmount = parseFloat(priceLimit) || 0;
-    const balanceAfter = walletBalance - enteredAmount;
     const stockPrice = parseFloat(stock.value) || 0;
     const quantity = stockPrice > 0 ? Math.floor(enteredAmount / stockPrice) : 0;
+    const totalHoldingsValue = availableHoldings * stockPrice;
+    const remainingHoldings = availableHoldings - quantity;
+    const remainingValue = remainingHoldings * stockPrice;
+
+    // Profit/Loss calculation
+    const profitLoss = (stockPrice - avgPurchasePrice) * quantity;
+    const profitLossPercent = avgPurchasePrice > 0 ? ((stockPrice - avgPurchasePrice) / avgPurchasePrice) * 100 : 0;
 
     // Validation
-    const isBelowMinimum = enteredAmount > 0 && enteredAmount < minimumTradeAmount;
-    const exceedsBalance = enteredAmount > walletBalance;
-    const canTrade = enteredAmount >= minimumTradeAmount && enteredAmount <= walletBalance;
+    const isBelowMinimum = enteredAmount > 0 && enteredAmount < minimumSellAmount;
+    const exceedsHoldings = enteredAmount > totalHoldingsValue;
+    const canSell = enteredAmount >= minimumSellAmount && enteredAmount <= totalHoldingsValue && quantity > 0;
 
-    // Handle Confirm Purchase
-    const handleConfirmPurchase = () => {
-        if (canTrade) {
+    // Handle Confirm Sale
+    const handleConfirmSale = () => {
+        if (canSell) {
             setShowConfirmModal(true);
             Animated.spring(scaleAnim, {
                 toValue: 1,
@@ -227,16 +243,30 @@ const BuyStockScreen = ({ navigation, route }) => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>
 
-                {/* Wallet Balance Section */}
-                <View style={styles.walletSection}>
-                    <View style={styles.walletCard}>
-                        <View style={styles.walletHeader}>
-                            <View style={styles.walletIconContainer}>
-                                <Icon name="wallet-outline" size={22} color={COLORS.primary} />
+                {/* Holdings Section */}
+                <View style={styles.holdingsSection}>
+                    <View style={styles.holdingsCard}>
+                        <View style={styles.holdingsHeader}>
+                            <View style={styles.holdingsIconContainer}>
+                                <Icon name="briefcase-outline" size={22} color={COLORS.primary} />
                             </View>
-                            <View style={styles.walletInfo}>
-                                <Text style={styles.walletLabel}>Available Balance</Text>
-                                <Text style={styles.walletAmount}>₹{walletBalance.toLocaleString('en-IN')}</Text>
+                            <View style={styles.holdingsInfo}>
+                                <Text style={styles.holdingsLabel}>Your Holdings</Text>
+                                <Text style={styles.holdingsAmount}>₹{totalHoldingsValue.toLocaleString('en-IN')}</Text>
+                                {/* <Text style={styles.holdingsSubtext}>{availableHoldings} units available</Text> */}
+                            </View>
+                        </View>
+
+                        {/* Holdings Details */}
+                        <View style={styles.holdingsDetailsRow}>
+                            <View style={styles.holdingsDetail}>
+                                <Text style={styles.holdingsDetailLabel}>Avg. Price</Text>
+                                <Text style={styles.holdingsDetailValue}>₹{formatCurrency(avgPurchasePrice)}</Text>
+                            </View>
+                            <View style={styles.holdingsDetailDivider} />
+                            <View style={styles.holdingsDetail}>
+                                <Text style={styles.holdingsDetailLabel}>Current Price</Text>
+                                <Text style={styles.holdingsDetailValue}>₹{stock.value}</Text>
                             </View>
                         </View>
 
@@ -244,25 +274,25 @@ const BuyStockScreen = ({ navigation, route }) => {
                             <View style={styles.errorContainer}>
                                 <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
                                 <Text style={styles.errorText}>
-                                    Minimum trade amount is ₹{minimumTradeAmount}
+                                    Minimum sell amount is ₹{minimumSellAmount}
                                 </Text>
                             </View>
                         )}
 
-                        {exceedsBalance && (
+                        {exceedsHoldings && (
                             <View style={styles.errorContainer}>
                                 <Icon name="alert-circle-outline" size={16} color={COLORS.error} />
                                 <Text style={styles.errorText}>
-                                    Insufficient balance. Available: ₹{formatCurrency(walletBalance)}
+                                    Maximum available: ₹{formatCurrency(totalHoldingsValue)}
                                 </Text>
                             </View>
                         )}
 
-                        {canTrade && (
+                        {canSell && (
                             <View style={styles.successContainer}>
                                 <Icon name="check-circle-outline" size={16} color={COLORS.success} />
                                 <Text style={styles.successText}>
-                                    Ready to trade • Balance after: ₹{formatCurrency(balanceAfter)}
+                                    Ready to sell -  {quantity} units -  Remaining: {remainingHoldings} units
                                 </Text>
                             </View>
                         )}
@@ -273,19 +303,27 @@ const BuyStockScreen = ({ navigation, route }) => {
                 <View style={styles.priceSection}>
                     <View style={styles.priceSectionHeader}>
                         <Text style={styles.priceLabel}>Enter Amount</Text>
-                        <TouchableOpacity
-                            style={styles.clearButton}
-                            onPress={handleClear}
-                            activeOpacity={0.7}>
-                            <Text style={styles.clearButtonText}>Clear</Text>
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.maxButton}
+                                onPress={handleMaxAmount}
+                                activeOpacity={0.7}>
+                                <Text style={styles.maxButtonText}>SELL ALL</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.clearButton}
+                                onPress={handleClear}
+                                activeOpacity={0.7}>
+                                <Text style={styles.clearButtonText}>Clear</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View style={[
                         styles.priceInputContainer,
                         isBelowMinimum && styles.priceInputError,
-                        exceedsBalance && styles.priceInputError,
-                        canTrade && styles.priceInputSuccess
+                        exceedsHoldings && styles.priceInputError,
+                        canSell && styles.priceInputSuccess
                     ]}>
                         <Text style={styles.currencySymbol}>₹</Text>
                         <Text style={styles.priceInputText}>
@@ -297,7 +335,7 @@ const BuyStockScreen = ({ navigation, route }) => {
                         <View style={styles.priceHint}>
                             <Icon name="currency-inr" size={14} color={COLORS.textSecondary} />
                             <Text style={styles.priceHintText}>
-                                Min: ₹{minimumTradeAmount}
+                                Min: ₹{minimumSellAmount}
                             </Text>
                         </View>
                         <View style={styles.priceHint}>
@@ -308,17 +346,12 @@ const BuyStockScreen = ({ navigation, route }) => {
                         </View>
                     </View>
 
-                    {quantity > 0 && (
-                        <View style={styles.quantityContainer}>
-                            <Text style={styles.quantityLabel}>Quantity:</Text>
-                            <Text style={styles.quantityValue}>{quantity} units</Text>
-                        </View>
-                    )}
+                  
                 </View>
 
                 {/* Transaction Summary */}
                 <View style={styles.summarySection}>
-                    <Text style={styles.summaryTitle}>Transaction Summary</Text>
+                    <Text style={styles.summaryTitle}>Sale Summary</Text>
 
                     <View style={styles.summaryRow}>
                         <Text style={styles.summaryLabel}>Stock Price</Text>
@@ -327,28 +360,49 @@ const BuyStockScreen = ({ navigation, route }) => {
 
                     <View style={styles.summaryDivider} />
 
-                    <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Quantity</Text>
-                        <Text style={styles.summaryValue}>{quantity} units</Text>
-                    </View>
+                    
 
                     <View style={styles.summaryDivider} />
 
                     <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Total Amount</Text>
+                        <Text style={styles.summaryLabel}>Sale Amount</Text>
                         <Text style={styles.summaryValue}>₹{formatCurrency(enteredAmount)}</Text>
                     </View>
 
                     <View style={styles.summaryDivider} />
 
                     <View style={styles.summaryRow}>
-                        <Text style={styles.summaryLabel}>Balance After</Text>
-                        <Text style={[
-                            styles.summaryValue,
-                            styles.summaryHighlight,
-                            { color: balanceAfter >= 0 ? COLORS.success : COLORS.error }
-                        ]}>
-                            ₹{formatCurrency(balanceAfter)}
+                        <Text style={styles.summaryLabel}>Avg. Buy Price</Text>
+                        <Text style={styles.summaryValue}>₹{formatCurrency(avgPurchasePrice)}</Text>
+                    </View>
+
+                    <View style={styles.summaryDivider} />
+
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Profit/Loss</Text>
+                        <View style={styles.profitLossContainer}>
+                            <Text style={[
+                                styles.summaryValue,
+                                styles.summaryHighlight,
+                                { color: profitLoss >= 0 ? COLORS.success : COLORS.error }
+                            ]}>
+                                {profitLoss >= 0 ? '+' : ''}₹{formatCurrency(Math.abs(profitLoss))}
+                            </Text>
+                            <Text style={[
+                                styles.profitLossPercent,
+                                { color: profitLoss >= 0 ? COLORS.success : COLORS.error }
+                            ]}>
+                                ({profitLoss >= 0 ? '+' : ''}{profitLossPercent.toFixed(2)}%)
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.summaryDivider} />
+
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Remaining Holdings</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.textSecondary }]}>
+                            {remainingHoldings} units
                         </Text>
                     </View>
                 </View>
@@ -359,37 +413,34 @@ const BuyStockScreen = ({ navigation, route }) => {
                 <View style={styles.bottomSection}>
                     <View style={styles.actionButtons}>
                         <TouchableOpacity
-                            style={styles.addMoneyButton}
+                            style={styles.viewHoldingsButton}
                             activeOpacity={0.8}
-                            onPress={() => navigation.navigate('Recharge')}>
-                            <Icon name="plus-circle" size={18} color={COLORS.white} />
-                            <Text style={styles.addMoneyButtonText}>Add Money</Text>
+                            onPress={() => navigation.navigate('Portfolio')}>
+                            <Icon name="briefcase-outline" size={18} color={COLORS.white} />
+                            <Text style={styles.viewHoldingsButtonText}>Portfolio</Text>
                         </TouchableOpacity>
-
 
                         <TouchableOpacity
                             style={[
-                                styles.buyButton,
-                                !canTrade && styles.disabledButton
+                                styles.sellButton,
+                                !canSell && styles.disabledButton
                             ]}
-                            activeOpacity={canTrade ? 0.8 : 1}
-                            disabled={!canTrade}
-                            onPress={handleConfirmPurchase}>
+                            activeOpacity={canSell ? 0.8 : 1}
+                            disabled={!canSell}
+                            onPress={handleConfirmSale}>
                             <Text style={[
-                                styles.buyButtonText,
-                                !canTrade && styles.disabledButtonText
+                                styles.sellButtonText,
+                                !canSell && styles.disabledButtonText
                             ]}>
                                 {isBelowMinimum
-                                    ? `Min ₹${minimumTradeAmount}`
-                                    : exceedsBalance
-                                        ? 'Insufficient Balance'
-                                        : canTrade
-                                            ? 'Buy Now'
+                                    ? `Min ₹${minimumSellAmount}`
+                                    : exceedsHoldings
+                                        ? 'Exceeds Holdings'
+                                        : canSell
+                                            ? 'Sell Now'
                                             : 'Enter Amount'}
                             </Text>
                         </TouchableOpacity>
-
-
                     </View>
 
                     {/* Number Pad */}
@@ -442,9 +493,9 @@ const BuyStockScreen = ({ navigation, route }) => {
                             <Icon name="alert-circle-outline" size={60} color={COLORS.primary} />
                         </View>
 
-                        <Text style={styles.modalTitle}>Confirm Purchase</Text>
+                        <Text style={styles.modalTitle}>Confirm Sale</Text>
                         <Text style={styles.modalSubtitle}>
-                            Please review your order details carefully
+                            Please review your sale details carefully
                         </Text>
 
                         {/* Order Details */}
@@ -454,13 +505,38 @@ const BuyStockScreen = ({ navigation, route }) => {
                                 <Text style={styles.modalDetailValue}>{stock.name}</Text>
                             </View>
 
+                            <View style={styles.modalDetailDivider} />
 
+                            <View style={styles.modalDetailRow}>
+                                <Text style={styles.modalDetailLabel}>Quantity</Text>
+                                <Text style={styles.modalDetailValue}>{quantity} units</Text>
+                            </View>
 
                             <View style={styles.modalDetailDivider} />
+
                             <View style={styles.modalDetailRow}>
-                                <Text style={styles.modalDetailLabel}>Total Amount</Text>
+                                <Text style={styles.modalDetailLabel}>Sale Price</Text>
+                                <Text style={styles.modalDetailValue}>₹{stock.value}</Text>
+                            </View>
+
+                            <View style={styles.modalDetailDivider} />
+
+                            <View style={styles.modalDetailRow}>
+                                <Text style={styles.modalDetailLabel}>You'll Receive</Text>
                                 <Text style={[styles.modalDetailValue, styles.modalDetailHighlight]}>
                                     ₹{formatCurrency(enteredAmount)}
+                                </Text>
+                            </View>
+
+                            <View style={styles.modalDetailDivider} />
+
+                            <View style={styles.modalDetailRow}>
+                                <Text style={styles.modalDetailLabel}>Profit/Loss</Text>
+                                <Text style={[
+                                    styles.modalDetailValue,
+                                    { color: profitLoss >= 0 ? COLORS.success : COLORS.error }
+                                ]}>
+                                    {profitLoss >= 0 ? '+' : ''}₹{formatCurrency(Math.abs(profitLoss))}
                                 </Text>
                             </View>
                         </View>
@@ -478,7 +554,7 @@ const BuyStockScreen = ({ navigation, route }) => {
                                 onPress={handleFinalConfirm}
                                 activeOpacity={0.8}>
                                 <Icon name="check-circle" size={20} color={COLORS.white} />
-                                <Text style={styles.modalConfirmText}>Yes, Buy Now</Text>
+                                <Text style={styles.modalConfirmText}>Yes, Sell Now</Text>
                             </TouchableOpacity>
                         </View>
                     </Animated.View>
@@ -509,14 +585,14 @@ const BuyStockScreen = ({ navigation, route }) => {
                             <Icon name="check-circle" size={80} color={COLORS.success} />
                         </Animated.View>
 
-                        <Text style={styles.successTitle}>Order Successful!</Text>
+                        <Text style={styles.successTitle}>Sale Successful!</Text>
                         <Text style={styles.successSubtitle}>
-                            Your order has been placed successfully
+                            Your stocks have been sold successfully
                         </Text>
 
-                        {/* Order ID */}
+                        {/* Transaction ID */}
                         <View style={styles.orderIdContainer}>
-                            <Text style={styles.orderIdLabel}>Order ID</Text>
+                            <Text style={styles.orderIdLabel}>Transaction ID</Text>
                             <Text style={styles.orderIdValue}>{orderId}</Text>
                         </View>
 
@@ -525,17 +601,23 @@ const BuyStockScreen = ({ navigation, route }) => {
                             <View style={styles.successDetailRow}>
                                 <Icon name="chart-line" size={20} color={COLORS.textSecondary} />
                                 <View style={styles.successDetailInfo}>
-                                    <Text style={styles.successDetailLabel}>Stock Purchased</Text>
+                                    <Text style={styles.successDetailLabel}>Stock Sold</Text>
                                     <Text style={styles.successDetailValue}>{stock.name}</Text>
                                 </View>
                             </View>
 
-
+                            <View style={styles.successDetailRow}>
+                                <Icon name="cube-outline" size={20} color={COLORS.textSecondary} />
+                                <View style={styles.successDetailInfo}>
+                                    <Text style={styles.successDetailLabel}>Quantity</Text>
+                                    <Text style={styles.successDetailValue}>{quantity} units</Text>
+                                </View>
+                            </View>
 
                             <View style={styles.successDetailRow}>
                                 <Icon name="cash" size={20} color={COLORS.textSecondary} />
                                 <View style={styles.successDetailInfo}>
-                                    <Text style={styles.successDetailLabel}>Amount Paid</Text>
+                                    <Text style={styles.successDetailLabel}>Amount Received</Text>
                                     <Text style={[styles.successDetailValue, { color: COLORS.success }]}>
                                         ₹{formatCurrency(enteredAmount)}
                                     </Text>
@@ -543,11 +625,24 @@ const BuyStockScreen = ({ navigation, route }) => {
                             </View>
 
                             <View style={styles.successDetailRow}>
-                                <Icon name="wallet" size={20} color={COLORS.textSecondary} />
+                                <Icon name={profitLoss >= 0 ? "trending-up" : "trending-down"} size={20} color={profitLoss >= 0 ? COLORS.success : COLORS.error} />
                                 <View style={styles.successDetailInfo}>
-                                    <Text style={styles.successDetailLabel}>Remaining Balance</Text>
+                                    <Text style={styles.successDetailLabel}>Profit/Loss</Text>
+                                    <Text style={[
+                                        styles.successDetailValue,
+                                        { color: profitLoss >= 0 ? COLORS.success : COLORS.error }
+                                    ]}>
+                                        {profitLoss >= 0 ? '+' : ''}₹{formatCurrency(Math.abs(profitLoss))}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.successDetailRow}>
+                                <Icon name="briefcase" size={20} color={COLORS.textSecondary} />
+                                <View style={styles.successDetailInfo}>
+                                    <Text style={styles.successDetailLabel}>Remaining Holdings</Text>
                                     <Text style={styles.successDetailValue}>
-                                        ₹{formatCurrency(balanceAfter)}
+                                        {remainingHoldings} units
                                     </Text>
                                 </View>
                             </View>
@@ -561,10 +656,15 @@ const BuyStockScreen = ({ navigation, route }) => {
                             <Text style={styles.successButtonText}>Done</Text>
                         </TouchableOpacity>
 
-
-
-                        
-
+                        <TouchableOpacity
+                            style={styles.viewOrderButton}
+                            onPress={() => {
+                                closeSuccessModal();
+                                navigation.navigate('TransactionDetails', { orderId });
+                            }}
+                            activeOpacity={0.8}>
+                            <Text style={styles.viewOrderButtonText}>View Transaction Details</Text>
+                        </TouchableOpacity>
                     </Animated.View>
                 </View>
             </Modal>
@@ -577,6 +677,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
     },
+
 
     scrollView: {
         flex: 1,
@@ -655,11 +756,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 
-    walletSection: {
+    holdingsSection: {
         padding: 16,
     },
 
-    walletCard: {
+    holdingsCard: {
         backgroundColor: COLORS.surface,
         borderRadius: 16,
         padding: 16,
@@ -667,13 +768,13 @@ const styles = StyleSheet.create({
         borderColor: COLORS.border,
     },
 
-    walletHeader: {
+    holdingsHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16,
     },
 
-    walletIconContainer: {
+    holdingsIconContainer: {
         width: 48,
         height: 48,
         borderRadius: 24,
@@ -683,22 +784,61 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
 
-    walletInfo: {
+    holdingsInfo: {
         flex: 1,
     },
 
-    walletLabel: {
+    holdingsLabel: {
         fontSize: 13,
         color: COLORS.textSecondary,
         marginBottom: 4,
         fontWeight: '500',
     },
 
-    walletAmount: {
+    holdingsAmount: {
         fontSize: 28,
         fontWeight: '800',
         color: COLORS.text,
         letterSpacing: -0.5,
+        marginBottom: 4,
+    },
+
+    holdingsSubtext: {
+        fontSize: 12,
+        color: COLORS.textSecondary,
+        fontWeight: '500',
+    },
+
+    holdingsDetailsRow: {
+        flexDirection: 'row',
+        backgroundColor: COLORS.background,
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 16,
+    },
+
+    holdingsDetail: {
+        flex: 1,
+        alignItems: 'center',
+    },
+
+    holdingsDetailDivider: {
+        width: 1,
+        backgroundColor: COLORS.border,
+        marginHorizontal: 12,
+    },
+
+    holdingsDetailLabel: {
+        fontSize: 11,
+        color: COLORS.textSecondary,
+        marginBottom: 6,
+        fontWeight: '600',
+    },
+
+    holdingsDetailValue: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: COLORS.text,
     },
 
     errorContainer: {
@@ -751,6 +891,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: COLORS.text,
+    },
+
+    headerActions: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+
+    maxButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+        backgroundColor: COLORS.primary,
+    },
+
+    maxButtonText: {
+        fontSize: 11,
+        color: COLORS.white,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
 
     clearButton: {
@@ -887,6 +1046,17 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
 
+    profitLossContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+
+    profitLossPercent: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+
     safeAreaBottom: {
         backgroundColor: COLORS.surface,
     },
@@ -906,7 +1076,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
 
-    buyButton: {
+    sellButton: {
         flex: 1,
         backgroundColor: COLORS.primary,
         borderRadius: 12,
@@ -925,7 +1095,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0,
     },
 
-    buyButtonText: {
+    sellButtonText: {
         fontSize: 16,
         fontWeight: '700',
         color: COLORS.white,
@@ -936,22 +1106,19 @@ const styles = StyleSheet.create({
         color: COLORS.textSecondary,
     },
 
-    addMoneyButton: {
+    viewHoldingsButton: {
         flex: 1,
-        backgroundColor: '#1E90FF',
+        backgroundColor: COLORS.surface,
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        shadowColor: '#1E90FF',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
 
-    addMoneyButtonText: {
+    viewHoldingsButtonText: {
         fontSize: 16,
         fontWeight: '700',
         color: COLORS.white,
@@ -1215,4 +1382,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default BuyStockScreen;
+export default SellStockScreen;

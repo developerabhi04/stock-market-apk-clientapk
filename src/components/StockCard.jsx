@@ -1,106 +1,97 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/colors';
-import { TYPOGRAPHY, COMMON_STYLES } from '../constants/styles';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const StockCard = ({ stock, onPress }) => {
+const StockCard = ({ stock, onPress, theme }) => {
     return (
         <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
             onPress={onPress}
             activeOpacity={0.8}>
-            <View style={styles.leftSection}>
-                <View style={styles.iconContainer}>
-                    <Icon name="chart-line" size={22} color={COLORS.primary} />
+            <View style={styles.header}>
+                <View style={[styles.iconContainer, { backgroundColor: stock.isPositive ? (theme.bg === '#000000' ? '#0D2B24' : '#E8F5F1') : (theme.bg === '#000000' ? '#2A1F0D' : '#FFF4E6') }]}>
+                    <Icon name="chart-line" size={16} color={stock.isPositive ? '#00C896' : '#FF9800'} />
                 </View>
-                <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={1}>
-                        {stock.name}
+                <View style={[styles.changeBadge, { backgroundColor: stock.isPositive ? (theme.bg === '#000000' ? '#0D2B24' : '#E8F5F1') : (theme.bg === '#000000' ? '#2A1F0D' : '#FFF4E6') }]}>
+                    <Icon
+                        name={stock.isPositive ? 'arrow-up' : 'arrow-down'}
+                        size={9}
+                        color={stock.isPositive ? '#00C896' : '#FF9800'}
+                    />
+                    <Text style={[styles.change, { color: stock.isPositive ? '#00C896' : '#FF9800' }]}>
+                        {stock.change}
                     </Text>
-                    <Text style={styles.ticker}>{stock.ticker}</Text>
                 </View>
             </View>
 
-            <View style={styles.rightSection}>
-                <Text style={styles.price}>₹{stock.price}</Text>
-                <Text
-                    style={[
-                        styles.change,
-                        stock.isPositive ? styles.positive : styles.negative,
-                    ]}>
-                    {stock.change}
+            <View style={styles.info}>
+                <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
+                    {stock.name}
                 </Text>
+                <Text style={[styles.ticker, { color: theme.textSecondary }]}>{stock.ticker}</Text>
             </View>
+
+            <Text style={[styles.price, { color: theme.text }]}>₹{stock.price}</Text>
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: COLORS.surface,
         borderRadius: 12,
-        padding: 14,
-        marginHorizontal: 16,
-        marginBottom: 10,
+        padding: 12,
+        borderWidth: 1,
+        minHeight: 120,
+        justifyContent: 'space-between',
+    },
+
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        ...COMMON_STYLES.shadow,
-    },
-
-    leftSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
+        marginBottom: 10,
     },
 
     iconContainer: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: COLORS.primaryLight + '20',
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
     },
 
-    info: {
-        flex: 1,
-    },
-
-    name: {
-        ...TYPOGRAPHY.body1,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-
-    ticker: {
-        ...TYPOGRAPHY.caption,
-        color: COLORS.textSecondary,
-    },
-
-    rightSection: {
-        alignItems: 'flex-end',
-    },
-
-    price: {
-        ...TYPOGRAPHY.body1,
-        fontWeight: '700',
-        marginBottom: 2,
+    changeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 5,
+        gap: 3,
     },
 
     change: {
-        ...TYPOGRAPHY.body2,
+        fontSize: 10,
+        fontWeight: '700',
+    },
+
+    info: {
+        marginBottom: 8,
+    },
+
+    name: {
+        fontSize: 13,
+        fontWeight: '700',
+        marginBottom: 3,
+    },
+
+    ticker: {
+        fontSize: 10,
         fontWeight: '600',
     },
 
-    positive: {
-        color: COLORS.green,
-    },
-
-    negative: {
-        color: COLORS.red,
+    price: {
+        fontSize: 16,
+        fontWeight: '800',
     },
 });
 

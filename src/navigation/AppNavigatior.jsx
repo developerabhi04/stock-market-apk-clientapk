@@ -22,6 +22,12 @@ import PrivacySecurityScreen from '../components/screens/PrivacySecurityScreen';
 import NotificationsScreen from '../components/screens/NotificationsScreen';
 import AppGuideScreen from '../components/screens/AppGuideScreen';
 import BuyStockScreen from '../components/screens/BuyStockScreen';
+import OrderScreen from '../components/screens/OrderScreen';
+import SellStockScreen from '../components/screens/SellStockScreen';
+import ProfileWalletScreen from '../components/screens/ProfileWalletScreen';
+import TransactionHistoryScreen from '../components/screens/TransactionHistoryScreen';
+import ReferralScreen from '../components/screens/ReferralScreen';
+import EditProfileScreen from '../components/screens/EditProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -68,14 +74,16 @@ const AppNavigator = () => {
 
                 <Stack.Screen name="Setting" component={SettingScreen} options={{ title: 'Settings' }} />
 
-                <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+                <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', headerShown: false }} />
 
                 <Stack.Screen name="History" component={HistoryScreen} options={{ title: 'Transaction History', headerShown: false }} />
 
                 <Stack.Screen name="Wallet" component={WalletScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Recharge" component={RechargeScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Payment" component={PaymentScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Withdraw" component={WithdrawScreen} options={{ headerShown: false }} />
+
 
                 <Stack.Screen name="StockDetail" component={StockDetailScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
                 <Stack.Screen name="StockHolding" component={StockHoldingsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
@@ -84,12 +92,30 @@ const AppNavigator = () => {
                 <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
                 <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
                 <Stack.Screen name="HelpSupport" component={AppGuideScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                <Stack.Screen name="ReferInvite" component={ReferralScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+
+                <Stack.Screen
+                    name="ProfileWallet"
+                    component={ProfileWalletScreen}
+                    options={{ headerShown: false }}
+                />
+
 
                 <Stack.Screen
                     name="BuyStock"
                     component={BuyStockScreen}
                     options={{ headerShown: false }}
                 />
+
+                <Stack.Screen
+                    name="SellStock"
+                    component={SellStockScreen}
+                    options={{ headerShown: false }}
+                />
+
+                <Stack.Screen name='TopOrder' component={OrderScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
+                {/* <Stack.Screen name='SellStock' component={SellStockScreen} options={{ animation: 'slide_from_right', headerShown: false }} /> */}
+                <Stack.Screen name='TransactionHistory' component={TransactionHistoryScreen} options={{ animation: 'slide_from_right', headerShown: false }} />
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -9,7 +9,6 @@ import {
     FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const NOTIFICATIONS_DATA = [
@@ -17,8 +16,8 @@ const NOTIFICATIONS_DATA = [
         id: '1',
         type: 'transaction',
         icon: 'check-circle',
-        iconColor: COLORS.success,
-        iconBg: COLORS.successLight,
+        iconColor: '#00C896',
+        iconBg: '#0D2B24',
         title: 'Payment Successful',
         message: 'Your payment of ₹1,500 has been credited to your wallet',
         time: '2 mins ago',
@@ -28,8 +27,8 @@ const NOTIFICATIONS_DATA = [
         id: '2',
         type: 'trade',
         icon: 'chart-line',
-        iconColor: COLORS.primary,
-        iconBg: COLORS.primaryUltraLight,
+        iconColor: '#2196F3',
+        iconBg: '#1A1F2A',
         title: 'Trade Executed',
         message: 'Your buy order for NIFTY 50 has been executed at ₹19,435.30',
         time: '1 hour ago',
@@ -39,8 +38,8 @@ const NOTIFICATIONS_DATA = [
         id: '3',
         type: 'alert',
         icon: 'alert-circle',
-        iconColor: COLORS.warning,
-        iconBg: COLORS.warningLight,
+        iconColor: '#FF9800',
+        iconBg: '#2A1F0D',
         title: 'Price Alert',
         message: 'SENSEX has reached your target price of ₹64,500',
         time: '3 hours ago',
@@ -50,8 +49,8 @@ const NOTIFICATIONS_DATA = [
         id: '4',
         type: 'system',
         icon: 'information',
-        iconColor: COLORS.primary,
-        iconBg: COLORS.primaryUltraLight,
+        iconColor: '#2196F3',
+        iconBg: '#1A1F2A',
         title: 'Account Verified',
         message: 'Your account details have been successfully verified',
         time: '1 day ago',
@@ -61,8 +60,8 @@ const NOTIFICATIONS_DATA = [
         id: '5',
         type: 'transaction',
         icon: 'cash-minus',
-        iconColor: COLORS.error,
-        iconBg: COLORS.errorLight,
+        iconColor: '#FF5252',
+        iconBg: '#2A1F1F',
         title: 'Withdrawal Initiated',
         message: 'Your withdrawal request of ₹5,000 is being processed',
         time: '2 days ago',
@@ -72,8 +71,8 @@ const NOTIFICATIONS_DATA = [
         id: '6',
         type: 'trade',
         icon: 'trending-up',
-        iconColor: COLORS.success,
-        iconBg: COLORS.successLight,
+        iconColor: '#00C896',
+        iconBg: '#0D2B24',
         title: 'Profit Achieved',
         message: 'Your portfolio gained ₹2,500 today',
         time: '3 days ago',
@@ -83,8 +82,8 @@ const NOTIFICATIONS_DATA = [
         id: '7',
         type: 'system',
         icon: 'shield-check',
-        iconColor: COLORS.primary,
-        iconBg: COLORS.primaryUltraLight,
+        iconColor: '#9C27B0',
+        iconBg: '#1F1A2A',
         title: 'Security Update',
         message: 'Two-factor authentication has been enabled on your account',
         time: '1 week ago',
@@ -141,14 +140,17 @@ const NotificationScreen = ({ navigation }) => {
                     {item.message}
                 </Text>
 
-                <Text style={styles.notificationTime}>{item.time}</Text>
+                <View style={styles.notificationFooter}>
+                    <Icon name="clock-outline" size={12} color="#666666" />
+                    <Text style={styles.notificationTime}>{item.time}</Text>
+                </View>
             </View>
         </TouchableOpacity>
     );
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+            <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
             {/* Header */}
             <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -157,7 +159,7 @@ const NotificationScreen = ({ navigation }) => {
                         style={styles.backButton}
                         onPress={() => navigation.goBack()}
                         activeOpacity={0.7}>
-                        <Icon name="arrow-left" size={24} color={COLORS.text} />
+                        <Icon name="arrow-left" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
 
                     <View style={styles.headerCenter}>
@@ -173,7 +175,7 @@ const NotificationScreen = ({ navigation }) => {
                         style={styles.markAllButton}
                         onPress={markAllAsRead}
                         activeOpacity={0.7}>
-                        <Icon name="check-all" size={22} color={COLORS.primary} />
+                        <Icon name="check-all" size={22} color="#00C896" />
                     </TouchableOpacity>
                 </View>
 
@@ -182,20 +184,31 @@ const NotificationScreen = ({ navigation }) => {
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.filterContainer}>
-                    {['all', 'transaction', 'trade', 'alert', 'system'].map((type) => (
+                    {[
+                        { key: 'all', label: 'All', icon: 'view-grid' },
+                        { key: 'transaction', label: 'Payments', icon: 'cash' },
+                        { key: 'trade', label: 'Trades', icon: 'chart-line' },
+                        { key: 'alert', label: 'Alerts', icon: 'bell' },
+                        { key: 'system', label: 'System', icon: 'cog' },
+                    ].map((type) => (
                         <TouchableOpacity
-                            key={type}
+                            key={type.key}
                             style={[
                                 styles.filterTab,
-                                filter === type && styles.filterTabActive
+                                filter === type.key && styles.filterTabActive
                             ]}
-                            onPress={() => setFilter(type)}
+                            onPress={() => setFilter(type.key)}
                             activeOpacity={0.7}>
+                            <Icon
+                                name={type.icon}
+                                size={16}
+                                color={filter === type.key ? '#00C896' : '#999999'}
+                            />
                             <Text style={[
                                 styles.filterTabText,
-                                filter === type && styles.filterTabTextActive
+                                filter === type.key && styles.filterTabTextActive
                             ]}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {type.label}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -213,7 +226,9 @@ const NotificationScreen = ({ navigation }) => {
                 />
             ) : (
                 <View style={styles.emptyState}>
-                    <Icon name="bell-off-outline" size={80} color={COLORS.border} />
+                    <View style={styles.emptyIconContainer}>
+                        <Icon name="bell-off-outline" size={60} color="#666666" />
+                    </View>
                     <Text style={styles.emptyStateTitle}>No Notifications</Text>
                     <Text style={styles.emptyStateText}>
                         You're all caught up! Check back later for updates.
@@ -227,23 +242,23 @@ const NotificationScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#000000',
     },
 
     safeArea: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: '#000000',
     },
 
     // Header
     header: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: '#000000',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        borderBottomColor: '#1A1A1A',
     },
 
     backButton: {
@@ -265,11 +280,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: COLORS.text,
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
     },
 
     headerBadge: {
-        backgroundColor: COLORS.error,
+        backgroundColor: '#FF5252',
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -281,7 +297,7 @@ const styles = StyleSheet.create({
     headerBadgeText: {
         fontSize: 11,
         fontWeight: '700',
-        color: COLORS.white,
+        color: '#FFFFFF',
     },
 
     markAllButton: {
@@ -296,32 +312,35 @@ const styles = StyleSheet.create({
     filterContainer: {
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: COLORS.surface,
-        gap: 8,
+        backgroundColor: '#000000',
+        gap: 10,
     },
 
     filterTab: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
         borderRadius: 20,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#1A1A1A',
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: '#2A2A2A',
+        gap: 6,
     },
 
     filterTabActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
+        backgroundColor: '#0D2B24',
+        borderColor: '#00C896',
     },
 
     filterTabText: {
         fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.textSecondary,
+        fontWeight: '700',
+        color: '#999999',
     },
 
     filterTabTextActive: {
-        color: COLORS.white,
+        color: '#00C896',
     },
 
     // Notifications List
@@ -331,23 +350,18 @@ const styles = StyleSheet.create({
     },
 
     notificationCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 16,
-        padding: 16,
+        backgroundColor: '#1A1A1A',
+        borderRadius: 12,
+        padding: 14,
         marginBottom: 12,
         flexDirection: 'row',
         borderWidth: 1,
-        borderColor: COLORS.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        borderColor: '#2A2A2A',
     },
 
     notificationCardUnread: {
-        backgroundColor: COLORS.primaryUltraLight,
-        borderColor: COLORS.primary,
+        backgroundColor: '#0D2B24',
+        borderColor: '#00C896',
         borderWidth: 1.5,
     },
 
@@ -368,13 +382,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 4,
+        marginBottom: 6,
     },
 
     notificationTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: COLORS.text,
+        color: '#FFFFFF',
         flex: 1,
     },
 
@@ -382,21 +396,27 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: COLORS.primary,
+        backgroundColor: '#00C896',
         marginLeft: 8,
     },
 
     notificationMessage: {
         fontSize: 13,
-        color: COLORS.textSecondary,
+        color: '#999999',
         lineHeight: 18,
-        marginBottom: 6,
+        marginBottom: 8,
+    },
+
+    notificationFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
 
     notificationTime: {
         fontSize: 11,
-        color: COLORS.textLight,
-        fontWeight: '500',
+        color: '#666666',
+        fontWeight: '600',
     },
 
     // Empty State
@@ -407,17 +427,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
     },
 
+    emptyIconContainer: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#1A1A1A',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+        borderWidth: 2,
+        borderColor: '#2A2A2A',
+    },
+
     emptyStateTitle: {
         fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginTop: 16,
+        fontWeight: '800',
+        color: '#FFFFFF',
         marginBottom: 8,
+        letterSpacing: 0.3,
     },
 
     emptyStateText: {
         fontSize: 14,
-        color: COLORS.textSecondary,
+        color: '#999999',
         textAlign: 'center',
         lineHeight: 20,
     },

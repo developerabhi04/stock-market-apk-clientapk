@@ -1,77 +1,137 @@
-import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import React, { useRef, createRef } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {COLORS} from '../constants/colors';
-import {TYPOGRAPHY} from '../constants/styles';
 
 // Import Screens
 import HomeScreen from '../components/screens/HomeScreen';
 import HistoryScreen from '../components/screens/HistoryScreen';
+import ProfileScreen from '../components/screens/ProfileScreen';
+import PortfolioScreen from '../components/screens/PortfolioScreen';
+import OrderScreen from '../components/screens/OrderScreen';
 
 const Tab = createBottomTabNavigator();
 
+// Create refs for each screen
+const screenRefs = {
+  Home: createRef(),
+  Portfolio: createRef(),
+  Orders: createRef(),
+  Profile: createRef(),
+};
+
 const BottomTabNavigator = () => {
+  const insets = useSafeAreaInsets();
+
+  // Function to scroll to top
+  const scrollToTop = (screenName) => {
+    const ref = screenRefs[screenName];
+    if (ref?.current?.scrollToTop) {
+      ref.current.scrollToTop();
+    }
+  };
+
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textTertiary,
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIcon: ({focused, color, size}) => {
+        tabBarStyle: {
+          ...styles.tabBar,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+        },
+        tabBarActiveTintColor: '#00C896',
+        tabBarInactiveTintColor: '#666666',
+        tabBarShowLabel: true,
+        tabBarHideOnKeyboard: true,
+        tabBarIcon: ({ focused, color }) => {
           let iconName;
+          const iconSize = focused ? 24 : 22;
 
-          if (route.name === 'Stocks') {
-            iconName = 'chart-line';
-          } else if (route.name === 'History') {
-            iconName = 'history';
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Portfolio') {
+            iconName = focused ? 'briefcase' : 'briefcase-outline';
+          } else if (route.name === 'Orders') {
+            iconName = focused ? 'clipboard-text' : 'clipboard-text-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'account-circle' : 'account-circle-outline';
           }
 
-          return <Icon name={iconName} size={focused ? 26 : 24} color={color} />;
+          return (
+            <View style={[styles.iconContainer, focused && styles.iconContainerActive]}>
+              <Icon name={iconName} size={iconSize} color={color} />
+            </View>
+          );
         },
-      })}>
-      <Tab.Screen
-        name="Stocks"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Stocks',
-        }}
-      />
-      <Tab.Screen
-        name="History"
-        component={HistoryScreen}
-        options={{
-          tabBarLabel: 'History',
-        }}
-      />
+        tabBarLabel: ({ focused, color }) => {
+          return (
+            <Text style={[styles.tabBarLabel, { color, fontWeight: focused ? '700' : '600' }]}>
+              {route.name}
+            </Text>
+          );
+        },
+        tabBarItemStyle: styles.tabBarItem,
+      })}
+      screenListeners={{
+        tabPress: (e) => {
+          const routeName = e.target.split('-')[0];
+          scrollToTop(routeName);
+        },
+      }}>
+      <Tab.Screen name="Home">
+        {(props) => <HomeScreen {...props} ref={screenRefs.Home} />}
+      </Tab.Screen>
+      <Tab.Screen name="Portfolio">
+        {(props) => <PortfolioScreen {...props} ref={screenRefs.Portfolio} />}
+      </Tab.Screen>
+      <Tab.Screen name="Orders">
+        {(props) => <OrderScreen {...props} ref={screenRefs.Orders} />}
+      </Tab.Screen>
+      <Tab.Screen name="Profile">
+        {(props) => <ProfileScreen {...props} ref={screenRefs.Profile} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#000000',
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    height: 65,
-    paddingBottom: 8,
-    paddingTop: 4,
-    elevation: 8,
-    shadowColor: COLORS.shadow,
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    borderTopColor: '#1A1A1A',
+    paddingTop: 6,
+    paddingHorizontal: 8,
+    elevation: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+  },
+
+  tabBarItem: {
+    paddingVertical: 4,
+  },
+
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 20,
+    marginBottom: 2,
+  },
+
+  iconContainerActive: {
+    backgroundColor: '#0D2B24',
+    borderWidth: 1,
+    borderColor: '#00C89630',
   },
 
   tabBarLabel: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '600',
-    fontSize: 12,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
 });
 

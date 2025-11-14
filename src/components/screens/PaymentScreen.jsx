@@ -4,297 +4,367 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Alert,
-    Clipboard,
     TextInput,
     ScrollView,
     Image,
-    Platform,
     StatusBar,
+    Modal,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS } from '../../constants/colors';
-import { TYPOGRAPHY, COMMON_STYLES } from '../../constants/styles';
+import Clipboard from '@react-native-clipboard/clipboard';
 
 const PaymentScreen = ({ navigation, route }) => {
-    const { amount, upiId, qrCodeImage } = route?.params || {
-        amount: '1000',
-        upiId: 'merchant@paytm',
-        qrCodeImage: null,
-    };
+    const { amount } = route?.params || { amount: 1000 };
+
+    const upiId = 'merchant@paytm';
+    const qrCodeImage = 'https://via.placeholder.com/300';
 
     const [utr, setUtr] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [submittedUTR, setSubmittedUTR] = useState('');
 
     const copyToClipboard = (text) => {
         Clipboard.setString(text);
-        Alert.alert('Copied!', `${text} has been copied to clipboard.`);
+        Alert.alert('Copied!', 'UPI ID copied to clipboard');
     };
 
-    const handleConfirmPayment = () => {
+    const handlePaymentDone = () => {
+        setCurrentStep(2);
+    };
+
+    const handleSubmitUTR = async () => {
         if (!utr.trim()) {
-            Alert.alert('Required', 'Please enter UTR/Transaction ID to confirm payment.');
+            Alert.alert('Required', 'Please enter UTR/Transaction ID');
             return;
         }
 
-        if (utr.length < 6) {
-            Alert.alert('Invalid UTR', 'Please enter a valid transaction ID (minimum 6 characters).');
+        if (utr.length < 12) {
+            Alert.alert('Invalid UTR', 'UTR must be at least 12 characters');
             return;
         }
 
-        setIsProcessing(true);
+        setIsSubmitting(true);
 
-        // Simulate API call
         setTimeout(() => {
-            setIsProcessing(false);
-            Alert.alert(
-                'Payment Confirmed',
-                `Payment of ₹${amount} has been received successfully.\n\nTransaction ID: ${utr}`,
-                [{ text: 'Done', onPress: () => navigation.goBack() }],
-            );
-        }, 1500);
+            setIsSubmitting(false);
+            setSubmittedUTR(utr);
+            setShowSuccessModal(true);
+        }, 2000);
     };
 
-    // Payment apps data
-    const paymentApps = [
-        { id: 1, name: 'PhonePe', icon: 'alpha-p-circle', color: '#5f259f' },
-        { id: 2, name: 'Paytm', icon: 'alpha-p-circle-outline', color: '#00BAF2' },
-        { id: 3, name: 'Google Pay', icon: 'google-pay', color: '#4285F4' },
-        { id: 4, name: 'PayPal', icon: 'alpha-p-box', color: '#003087' },
-        { id: 5, name: 'Amazon Pay', icon: 'amazon', color: '#FF9900' },
-        { id: 6, name: 'Bhim UPI', icon: 'bank', color: '#097969' },
-    ];
+    const handleDoneSuccess = () => {
+        setShowSuccessModal(false);
+        navigation.navigate('Home');
+    };
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+            <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-            {/* Header */}
-            <SafeAreaView edges={['top']} style={styles.safeArea}>
+            <SafeAreaView edges={['top']} style={styles.safeAreaTop}>
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => navigation.goBack()}
-                        activeOpacity={0.7}>
-                        <Icon name="arrow-left" size={24} color={COLORS.text} />
+                        onPress={() => navigation.goBack()}>
+                        <Icon name="arrow-left" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Complete Payment</Text>
-                    <View style={styles.headerRight} />
+                    <View style={styles.backButton} />
                 </View>
             </SafeAreaView>
 
             <ScrollView
+                style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>
 
-                {/* IMPORTANT: UTR Mandatory Warning Banner */}
-                <View style={styles.criticalWarningBanner}>
-                    <View style={styles.warningIconContainer}>
-                        <Icon name="alert" size={24} color={COLORS.error} />
+                {/* Progress Steps */}
+                <View style={styles.progressContainer}>
+                    <View style={styles.progressStep}>
+                        <View style={[styles.stepCircle, currentStep >= 1 && styles.stepCircleActive]}>
+                            {currentStep > 1 ? (
+                                <Icon name="check" size={16} color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.stepNumber}>1</Text>
+                            )}
+                        </View>
+                        <Text style={styles.stepLabel}>Pay</Text>
                     </View>
-                    <View style={styles.warningContent}>
-                        <Text style={styles.warningTitle}>⚠️ UTR Submission Required</Text>
-                        <Text style={styles.warningText}>
-                            Your wallet will NOT be credited unless you submit the UTR/Transaction ID after completing payment. Please ensure you enter the correct UTR to receive your balance.
-                        </Text>
+                    <View style={[styles.progressLine, currentStep >= 2 && styles.progressLineActive]} />
+                    <View style={styles.progressStep}>
+                        <View style={[styles.stepCircle, currentStep >= 2 && styles.stepCircleActive]}>
+                            <Text style={styles.stepNumber}>2</Text>
+                        </View>
+                        <Text style={styles.stepLabel}>Submit UTR</Text>
                     </View>
                 </View>
 
                 {/* Amount Card */}
                 <View style={styles.amountCard}>
-                    <View style={styles.amountIconContainer}>
-                        <Icon name="currency-inr" size={32} color={COLORS.primary} />
-                    </View>
                     <Text style={styles.amountLabel}>Amount to Pay</Text>
-                    <Text style={styles.amountValue}>₹{amount}</Text>
-                    <View style={styles.amountBadge}>
-                        <Icon name="clock-outline" size={14} color={COLORS.warning} />
-                        <Text style={styles.amountBadgeText}>Payment pending</Text>
-                    </View>
+                    <Text style={styles.amountValue}>₹{amount.toLocaleString('en-IN')}</Text>
                 </View>
 
-                {/* Instructions */}
-                <View style={styles.instructionCard}>
-                    <View style={styles.instructionHeader}>
-                        <Icon name="information-outline" size={20} color={COLORS.primary} />
-                        <Text style={styles.instructionTitle}>Payment Instructions</Text>
-                    </View>
-                    <View style={styles.instructionSteps}>
-                        <View style={styles.instructionStep}>
-                            <View style={styles.stepNumber}>
-                                <Text style={styles.stepNumberText}>1</Text>
-                            </View>
-                            <Text style={styles.stepText}>Copy UPI ID or scan QR code</Text>
-                        </View>
-                        <View style={styles.instructionStep}>
-                            <View style={styles.stepNumber}>
-                                <Text style={styles.stepNumberText}>2</Text>
-                            </View>
-                            <Text style={styles.stepText}>Complete payment in your UPI app</Text>
-                        </View>
-                        <View style={styles.instructionStep}>
-                            <View style={styles.stepNumber}>
-                                <Text style={styles.stepNumberText}>3</Text>
-                            </View>
-                            <Text style={styles.stepText}>
-                                <Text style={styles.stepTextBold}>Enter UTR below</Text> - This is mandatory for wallet credit
+                {currentStep === 1 ? (
+                    <>
+                        <View style={styles.instructionBox}>
+                            <Icon name="information" size={20} color="#00C896" />
+                            <Text style={styles.instructionText}>
+                                Scan QR code or use UPI ID to complete payment in any UPI app
                             </Text>
                         </View>
-                    </View>
-                </View>
 
-                {/* UPI ID Card */}
-                <View style={styles.paymentMethodCard}>
-                    <Text style={styles.cardTitle}>UPI ID</Text>
-                    <View style={styles.upiIdContainer}>
-                        <View style={styles.upiIdBox}>
-                            <Icon name="at" size={18} color={COLORS.textSecondary} />
-                            <Text style={styles.upiIdText} selectable>{upiId}</Text>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.copyButton}
-                            onPress={() => copyToClipboard(upiId)}
-                            activeOpacity={0.7}>
-                            <Icon name="content-copy" size={18} color={COLORS.primary} />
-                            <Text style={styles.copyButtonText}>Copy</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Payment Apps Grid */}
-                    {/* <View style={styles.paymentAppsSection}>
-                        <Text style={styles.paymentAppsLabel}>Pay using</Text>
-                        <View style={styles.paymentAppsGrid}>
-                            {paymentApps.map((app) => (
+                        <View style={styles.paymentSection}>
+                            <Text style={styles.sectionTitle}>Use UPI ID</Text>
+                            <View style={styles.upiContainer}>
+                                <View style={styles.upiIdBox}>
+                                    <Icon name="at" size={18} color="#999999" />
+                                    <Text style={styles.upiIdText}>{upiId}</Text>
+                                </View>
                                 <TouchableOpacity
-                                    key={app.id}
-                                    style={styles.paymentAppItem}
+                                    style={styles.copyButton}
+                                    onPress={() => copyToClipboard(upiId)}
                                     activeOpacity={0.7}>
-                                    <View style={[styles.paymentAppIconContainer, { backgroundColor: app.color + '20' }]}>
-                                        <Icon name={app.icon} size={32} color={app.color} />
-                                    </View>
-                                    <Text style={styles.paymentAppName}>{app.name}</Text>
+                                    <Icon name="content-copy" size={18} color="#00C896" />
                                 </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View> */}
-
-                </View>
-
-                {/* QR Code Card */}
-                <View style={styles.paymentMethodCard}>
-                    <Text style={styles.cardTitle}>Or Scan QR Code</Text>
-                    <View style={styles.qrCodeContainer}>
-                        {qrCodeImage ? (
-                            <Image source={{ uri: qrCodeImage }} style={styles.qrCodeImage} />
-                        ) : (
-                            <View style={styles.qrCodePlaceholder}>
-                                <Icon name="qrcode-scan" size={120} color={COLORS.border} />
-                                <Text style={styles.qrCodePlaceholderText}>QR Code will appear here</Text>
                             </View>
-                        )}
-                    </View>
-                    <View style={styles.qrHintContainer}>
-                        <Icon name="information-outline" size={16} color={COLORS.primary} />
-                        <Text style={styles.qrHintText}>
-                            Open any UPI app and scan this QR code to pay
-                        </Text>
-                    </View>
-                </View>
+                        </View>
 
-                {/* UTR Input Card - With Emphasis */}
-                <View style={styles.utrCard}>
-                    <View style={styles.utrCardHeader}>
-                        <Icon name="shield-check" size={20} color={COLORS.error} />
-                        <Text style={styles.cardTitleImportant}>Transaction Confirmation (Required)</Text>
-                    </View>
-                    <Text style={styles.utrSubtitle}>
-                        Enter the 12-digit UTR/Transaction ID from your payment app
-                    </Text>
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>OR</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
 
-                    {/* UTR Importance Notice */}
-                    <View style={styles.utrImportanceBox}>
-                        <Icon name="alert-circle" size={18} color={COLORS.error} />
-                        <Text style={styles.utrImportanceText}>
-                            Without UTR, your ₹{amount} will NOT be added to your wallet
-                        </Text>
-                    </View>
+                        <View style={styles.paymentSection}>
+                            <Text style={styles.sectionTitle}>Scan QR Code</Text>
+                            <View style={styles.qrContainer}>
+                                {qrCodeImage ? (
+                                    <Image
+                                        source={{ uri: qrCodeImage }}
+                                        style={styles.qrImage}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    <View style={styles.qrPlaceholder}>
+                                        <Icon name="qrcode" size={100} color="#666666" />
+                                        <Text style={styles.qrPlaceholderText}>
+                                            QR Code will appear here
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
 
-                    <View style={styles.utrInputContainer}>
-                        <Icon name="receipt" size={20} color={COLORS.textSecondary} />
-                        <TextInput
-                            style={styles.utrInput}
-                            placeholder="Enter UTR / Transaction ID *"
-                            placeholderTextColor={COLORS.textLight}
-                            value={utr}
-                            onChangeText={setUtr}
-                            autoCapitalize="characters"
-                            keyboardType="default"
-                            maxLength={20}
-                        />
-                        {utr.length > 0 && (
-                            <TouchableOpacity onPress={() => setUtr('')}>
-                                <Icon name="close-circle" size={20} color={COLORS.textLight} />
-                            </TouchableOpacity>
-                        )}
-                    </View>
-
-                    {utr.length > 0 && utr.length < 6 && (
-                        <View style={styles.validationMessage}>
-                            <Icon name="alert-circle-outline" size={14} color={COLORS.error} />
-                            <Text style={styles.validationText}>
-                                UTR should be at least 6 characters
+                        <View style={styles.securityBadge}>
+                            <Icon name="lock" size={16} color="#00C896" />
+                            <Text style={styles.securityText}>
+                                256-bit Encrypted • 100% Secure
                             </Text>
                         </View>
-                    )}
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.utrSection}>
+                            <View style={styles.utrHeader}>
+                                <Icon name="shield-check" size={24} color="#00C896" />
+                                <Text style={styles.utrHeaderText}>Verify Your Payment</Text>
+                            </View>
 
-                    {/* Where to find UTR */}
-                    <View style={styles.utrHelpBox}>
-                        <Icon name="help-circle-outline" size={16} color={COLORS.primary} />
-                        <Text style={styles.utrHelpText}>
-                            Find UTR in your payment app's transaction history
-                        </Text>
-                    </View>
-                </View>
+                            <Text style={styles.utrDescription}>
+                                To credit ₹{amount.toLocaleString('en-IN')} to your wallet, please enter the 12-digit UTR/Transaction ID from your payment app.
+                            </Text>
 
-                {/* Security Badge */}
-                <View style={styles.securityBadge}>
-                    <Icon name="shield-check" size={18} color={COLORS.success} />
-                    <Text style={styles.securityText}>
-                        Secure & Encrypted Transaction
-                    </Text>
-                    <Icon name="lock" size={16} color={COLORS.success} />
-                </View>
+                            <View style={styles.noticeBox}>
+                                <Icon name="alert-circle" size={20} color="#FF9800" />
+                                <Text style={styles.noticeText}>
+                                    Without UTR, your payment cannot be verified and wallet will not be credited.
+                                </Text>
+                            </View>
 
+                            <View style={styles.utrInputSection}>
+                                <Text style={styles.utrInputLabel}>UTR / Transaction ID</Text>
+                                <View style={styles.utrInputContainer}>
+                                    <Icon name="receipt-text" size={20} color="#999999" />
+                                    <TextInput
+                                        style={styles.utrInput}
+                                        placeholder="Enter 12-digit UTR"
+                                        placeholderTextColor="#666666"
+                                        value={utr}
+                                        onChangeText={setUtr}
+                                        autoCapitalize="characters"
+                                        keyboardType="default"
+                                        maxLength={20}
+                                    />
+                                    {utr.length > 0 && (
+                                        <TouchableOpacity onPress={() => setUtr('')}>
+                                            <Icon name="close-circle" size={20} color="#666666" />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                {utr.length > 0 && utr.length < 12 && (
+                                    <View style={styles.validationBox}>
+                                        <Icon name="alert" size={14} color="#FF5252" />
+                                        <Text style={styles.validationText}>
+                                            UTR must be at least 12 characters
+                                        </Text>
+                                    </View>
+                                )}
+
+                                <View style={styles.helpBox}>
+                                    <Icon name="help-circle" size={16} color="#00C896" />
+                                    <Text style={styles.helpText}>
+                                        Find UTR in your payment app's transaction history or SMS
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.exampleBox}>
+                                <Text style={styles.exampleTitle}>Example UTR Format:</Text>
+                                <Text style={styles.exampleText}>401234567890</Text>
+                            </View>
+
+                            <TouchableOpacity
+                                style={styles.backToPaymentButton}
+                                onPress={() => setCurrentStep(1)}
+                                activeOpacity={0.7}>
+                                <Icon name="arrow-left" size={18} color="#999999" />
+                                <Text style={styles.backToPaymentText}>Back to Payment</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.securityBadge}>
+                            <Icon name="lock" size={16} color="#00C896" />
+                            <Text style={styles.securityText}>
+                                256-bit Encrypted • 100% Secure
+                            </Text>
+                        </View>
+                    </>
+                )}
             </ScrollView>
 
-            {/* Bottom Fixed Button */}
-            <SafeAreaView edges={['bottom']} style={styles.bottomSafeArea}>
-                <View style={styles.bottomContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.confirmButton,
-                            (!utr.trim() || isProcessing) && styles.confirmButtonDisabled
-                        ]}
-                        onPress={handleConfirmPayment}
-                        disabled={!utr.trim() || isProcessing}
-                        activeOpacity={0.8}>
-                        {isProcessing ? (
-                            <View style={styles.processingContainer}>
-                                <Icon name="loading" size={20} color={COLORS.white} />
-                                <Text style={styles.confirmButtonText}>Processing...</Text>
-                            </View>
-                        ) : (
-                            <>
-                                <Icon name="check-circle" size={20} color={COLORS.white} />
-                                <Text style={styles.confirmButtonText}>
-                                    {utr.trim() ? 'Confirm Payment' : 'Enter UTR to Continue'}
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+            {/* Fixed Bottom Button */}
+            <SafeAreaView edges={['bottom']} style={styles.safeAreaBottom}>
+                <View style={styles.bottomButtonContainer}>
+                    {currentStep === 1 ? (
+                        <TouchableOpacity
+                            style={styles.paymentDoneButton}
+                            onPress={handlePaymentDone}
+                            activeOpacity={0.8}>
+                            <Icon name="check-circle" size={20} color="#FFFFFF" />
+                            <Text style={styles.paymentDoneButtonText}>Payment Done? Continue</Text>
+                            <Icon name="arrow-right" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={[
+                                styles.submitButton,
+                                (!utr.trim() || utr.length < 12 || isSubmitting) &&
+                                styles.submitButtonDisabled,
+                            ]}
+                            onPress={handleSubmitUTR}
+                            disabled={!utr.trim() || utr.length < 12 || isSubmitting}
+                            activeOpacity={0.8}>
+                            {isSubmitting ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <Icon name="check-circle" size={20} color="#FFFFFF" />
+                                    <Text style={styles.submitButtonText}>Submit & Verify</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    )}
                 </View>
             </SafeAreaView>
+
+            {/* Success Modal */}
+            <Modal
+                visible={showSuccessModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowSuccessModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.successModal}>
+                        {/* Success Animation */}
+                        <View style={styles.successIconContainer}>
+                            <View style={styles.successIconBackground}>
+                                <Icon name="check-circle" size={80} color="#12b00cff" />
+                            </View>
+                        </View>
+
+                        {/* Success Title */}
+                        <Text style={styles.successTitle}>
+                            UTR Submitted Successfully! ✓
+                        </Text>
+
+                        {/* Success Message */}
+                        <Text style={styles.successMessage}>
+                            We've received your UTR. Our team will verify it shortly.
+                        </Text>
+
+                        {/* UTR Display */}
+                        <View style={styles.utrDisplayBox}>
+                            <Text style={styles.utrDisplayLabel}>Your UTR:</Text>
+                            <Text style={styles.utrDisplayValue}>{submittedUTR}</Text>
+                        </View>
+
+                        {/* Info Box */}
+                        <View style={styles.infoBox}>
+                            <View style={styles.infoItem}>
+                                <View style={styles.infoIconContainer}>
+                                    <Icon name="clock-outline" size={20} color="#FF9800" />
+                                </View>
+                                <View style={styles.infoContent}>
+                                    <Text style={styles.infoTitle}>Processing Time</Text>
+                                    <Text style={styles.infoText}>Up to 24 hours</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.infoItem}>
+                                <View style={styles.infoIconContainer}>
+                                    <Icon name="check-circle-outline" size={20} color="#00C896" />
+                                </View>
+                                <View style={styles.infoContent}>
+                                    <Text style={styles.infoTitle}>Verification</Text>
+                                    <Text style={styles.infoText}>UTR matching in progress</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.infoItem}>
+                                <View style={styles.infoIconContainer}>
+                                    <Icon name="wallet" size={20} color="#2196F3" />
+                                </View>
+                                <View style={styles.infoContent}>
+                                    <Text style={styles.infoTitle}>Amount</Text>
+                                    <Text style={styles.infoText}>₹{amount.toLocaleString('en-IN')}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Note */}
+                        <View style={styles.noteBox}>
+                            <Icon name="information-outline" size={16} color="#2196F3" />
+                            <Text style={styles.noteText}>
+                                Once verified, your wallet will be credited automatically. We'll send you a notification.
+                            </Text>
+                        </View>
+
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={handleDoneSuccess}
+                            activeOpacity={0.8}>
+                            <Text style={styles.closeButtonText}>Go to Home</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -302,29 +372,25 @@ const PaymentScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#000000',
     },
 
-    safeArea: {
-        backgroundColor: COLORS.surface,
+    safeAreaTop: {
+        backgroundColor: '#000000',
     },
 
-    // Header
     header: {
-        backgroundColor: COLORS.surface,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        backgroundColor: '#000000',
     },
 
     backButton: {
         width: 40,
         height: 40,
-        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -332,415 +398,366 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: COLORS.text,
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
     },
 
-    headerRight: {
-        width: 40,
-    },
-
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 100,
-    },
-
-    // Critical Warning Banner
-    criticalWarningBanner: {
-        flexDirection: 'row',
-        backgroundColor: '#FFF3E0',
-        borderLeftWidth: 4,
-        borderLeftColor: COLORS.error,
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: COLORS.error,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-
-    warningIconContainer: {
-        marginRight: 12,
-    },
-
-    warningContent: {
+    scrollView: {
         flex: 1,
     },
 
-    warningTitle: {
-        fontSize: 15,
-        fontWeight: '800',
-        color: COLORS.error,
+    scrollContent: {
+        paddingBottom: 30,
+    },
+
+    // Progress Steps
+    progressContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 50,
+        paddingVertical: 24,
+    },
+
+    progressStep: {
+        alignItems: 'center',
+    },
+
+    stepCircle: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#1A1A1A',
+        borderWidth: 2,
+        borderColor: '#333333',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginBottom: 6,
     },
 
-    warningText: {
-        fontSize: 13,
-        color: '#D84315',
-        lineHeight: 18,
-        fontWeight: '500',
+    stepCircleActive: {
+        backgroundColor: '#00C896',
+        borderColor: '#00C896',
+    },
+
+    stepNumber: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+
+    stepLabel: {
+        fontSize: 12,
+        color: '#999999',
+        fontWeight: '600',
+    },
+
+    progressLine: {
+        flex: 1,
+        height: 2,
+        backgroundColor: '#333333',
+        marginHorizontal: 8,
+    },
+
+    progressLineActive: {
+        backgroundColor: '#00C896',
     },
 
     // Amount Card
     amountCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 20,
+        marginHorizontal: 16,
+        marginBottom: 14,
         padding: 24,
+        borderRadius: 16,
         alignItems: 'center',
-        marginBottom: 16,
         borderWidth: 1,
-        borderColor: COLORS.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 4,
-    },
-
-    amountIconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: COLORS.primaryUltraLight,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 12,
+        borderColor: '#2A2A2A',
     },
 
     amountLabel: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        marginBottom: 8,
+        fontSize: 13,
+        color: '#FF9800',
+        marginBottom: 2,
         fontWeight: '500',
     },
 
     amountValue: {
-        fontSize: 40,
+        fontSize: 36,
         fontWeight: '800',
-        color: COLORS.text,
-        marginBottom: 12,
+        color: '#FFFFFF',
         letterSpacing: -1,
     },
 
-    amountBadge: {
+    // Instruction Box
+    instructionBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.warningLight,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        gap: 6,
-    },
-
-    amountBadgeText: {
-        fontSize: 12,
-        color: COLORS.warning,
-        fontWeight: '600',
-    },
-
-    // Instruction Card
-    instructionCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
+        backgroundColor: '#0D2B24',
+        marginHorizontal: 16,
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: '#00C896',
+        gap: 10,
     },
 
-    instructionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-        gap: 8,
-    },
-
-    instructionTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-
-    instructionSteps: {
-        gap: 12,
-    },
-
-    instructionStep: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-
-    stepNumber: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: COLORS.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    stepNumberText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: COLORS.white,
-    },
-
-    stepText: {
+    instructionText: {
         flex: 1,
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        lineHeight: 20,
+        fontSize: 13,
+        color: '#00C896',
+        lineHeight: 18,
+        fontWeight: '500',
     },
 
-    stepTextBold: {
-        fontWeight: '700',
-        color: COLORS.error,
+    // Payment Section
+    paymentSection: {
+        marginHorizontal: 16,
+        marginBottom: 20,
     },
 
-    // Payment Method Card
-    paymentMethodCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-
-    cardTitle: {
+    sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: 12,
+        color: '#FFFFFF',
+        marginBottom: 14,
     },
 
-    upiIdContainer: {
+    qrContainer: {
+        backgroundColor: '#1A1A1A',
+        borderRadius: 16,
+        padding: 20,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+    },
+
+    qrImage: {
+        width: 250,
+        height: 250,
+        borderRadius: 12,
+    },
+
+    qrPlaceholder: {
+        width: 250,
+        height: 250,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#333333',
+        borderStyle: 'dashed',
+        borderRadius: 12,
+    },
+
+    qrPlaceholderText: {
+        fontSize: 12,
+        color: '#666666',
+        marginTop: 12,
+    },
+
+    // Divider
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        marginVertical: 20,
+    },
+
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#333333',
+    },
+
+    dividerText: {
+        fontSize: 12,
+        color: '#666666',
+        fontWeight: '700',
+        paddingHorizontal: 12,
+    },
+
+    // UPI Section
+    upiContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-        marginBottom: 16,
     },
 
     upiIdBox: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.background,
+        backgroundColor: '#1A1A1A',
+        padding: 16,
         borderRadius: 12,
-        padding: 14,
-        gap: 10,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: '#2A2A2A',
+        gap: 10,
     },
 
     upiIdText: {
-        flex: 1,
         fontSize: 15,
         fontWeight: '600',
-        color: COLORS.text,
-        letterSpacing: 0.5,
+        color: '#FFFFFF',
+        flex: 1,
     },
 
     copyButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.primaryUltraLight,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
+        backgroundColor: '#0D2B24',
+        width: 48,
+        height: 48,
         borderRadius: 12,
-        gap: 6,
-    },
-
-    copyButtonText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.primary,
-    },
-
-    // Payment Apps Section
-    paymentAppsSection: {
-        marginTop: 4,
-    },
-
-    paymentAppsLabel: {
-        fontSize: 13,
-        color: COLORS.textSecondary,
-        marginBottom: 12,
-        fontWeight: '600',
-    },
-
-    paymentAppsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-
-    paymentAppItem: {
-        width: '30%',
-        alignItems: 'center',
-        gap: 8,
-    },
-
-    paymentAppIconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: '#00C896',
     },
 
-    paymentAppName: {
-        fontSize: 11,
-        color: COLORS.textSecondary,
-        fontWeight: '600',
-        textAlign: 'center',
+    // UTR Section
+    utrSection: {
+        marginHorizontal: 16,
+        marginBottom: 20,
     },
 
-    // QR Code
-    qrCodeContainer: {
-        alignItems: 'center',
-        padding: 16,
-    },
-
-    qrCodeImage: {
-        width: 200,
-        height: 200,
-        borderRadius: 16,
-    },
-
-    qrCodePlaceholder: {
-        width: 200,
-        height: 200,
-        borderRadius: 16,
-        backgroundColor: COLORS.background,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: COLORS.border,
-        borderStyle: 'dashed',
-    },
-
-    qrCodePlaceholderText: {
-        fontSize: 12,
-        color: COLORS.textLight,
-        marginTop: 12,
-    },
-
-    qrHintContainer: {
+    utrHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.primaryUltraLight,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 10,
-        gap: 8,
+        marginBottom: 12,
+        gap: 10,
     },
 
-    qrHintText: {
+    utrHeaderText: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: '#FFFFFF',
+    },
+
+    utrDescription: {
+        fontSize: 14,
+        color: '#999999',
+        lineHeight: 20,
+        marginBottom: 16,
+    },
+
+    // Notice Box
+    noticeBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2A1F0D',
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#FF9800',
+        gap: 10,
+    },
+
+    noticeText: {
         flex: 1,
-        fontSize: 12,
-        color: COLORS.primary,
+        fontSize: 13,
+        color: '#FF9800',
+        lineHeight: 18,
         fontWeight: '500',
     },
 
-    // UTR Card - Enhanced
-    utrCard: {
-        backgroundColor: '#FFF9E6',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 2,
-        borderColor: COLORS.error,
+    // UTR Input
+    utrInputSection: {
+        marginBottom: 20,
     },
 
-    utrCardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 8,
-    },
-
-    cardTitleImportant: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: COLORS.error,
-    },
-
-    utrSubtitle: {
-        fontSize: 13,
-        color: COLORS.textSecondary,
-        marginBottom: 12,
-        lineHeight: 18,
-    },
-
-    utrImportanceBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.errorLight,
-        padding: 12,
-        borderRadius: 10,
-        gap: 8,
-        marginBottom: 16,
-    },
-
-    utrImportanceText: {
-        flex: 1,
-        fontSize: 13,
-        color: COLORS.error,
+    utrInputLabel: {
+        fontSize: 14,
         fontWeight: '700',
+        color: '#FFFFFF',
+        marginBottom: 10,
     },
 
     utrInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.white,
+        backgroundColor: '#1A1A1A',
         borderRadius: 12,
         padding: 14,
         borderWidth: 2,
-        borderColor: COLORS.error,
+        borderColor: '#00C896',
         gap: 10,
-        marginBottom: 8,
     },
 
     utrInput: {
         flex: 1,
         fontSize: 16,
-        color: COLORS.text,
         fontWeight: '600',
+        color: '#FFFFFF',
         letterSpacing: 1,
     },
 
-    validationMessage: {
+    validationBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        marginTop: 8,
         gap: 6,
     },
 
     validationText: {
         fontSize: 12,
-        color: COLORS.error,
+        color: '#FF5252',
         fontWeight: '600',
     },
 
-    utrHelpBox: {
+    helpBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.primaryUltraLight,
+        backgroundColor: '#0D2B24',
         padding: 10,
         borderRadius: 8,
+        marginTop: 10,
         gap: 8,
     },
 
-    utrHelpText: {
+    helpText: {
         flex: 1,
         fontSize: 12,
-        color: COLORS.primary,
+        color: '#00C896',
         fontWeight: '500',
+    },
+
+    // Example Box
+    exampleBox: {
+        backgroundColor: '#1A1A1A',
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+    },
+
+    exampleTitle: {
+        fontSize: 12,
+        color: '#999999',
+        marginBottom: 6,
+        fontWeight: '600',
+    },
+
+    exampleText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#00C896',
+        letterSpacing: 2,
+    },
+
+    // Back Button
+    backToPaymentButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        gap: 6,
+    },
+
+    backToPaymentText: {
+        fontSize: 14,
+        color: '#999999',
+        fontWeight: '600',
     },
 
     // Security Badge
@@ -748,69 +765,228 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: COLORS.successLight,
+        marginHorizontal: 16,
         paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 12,
         gap: 8,
-        marginBottom: 16,
     },
 
     securityText: {
-        fontSize: 13,
-        color: COLORS.success,
+        fontSize: 12,
+        color: '#00C896',
         fontWeight: '600',
     },
 
-    // Bottom Button
-    bottomSafeArea: {
-        backgroundColor: COLORS.surface,
+    // Fixed Bottom Button
+    safeAreaBottom: {
+        backgroundColor: '#000000',
     },
 
-    bottomContainer: {
-        backgroundColor: COLORS.surface,
+    bottomButtonContainer: {
         paddingHorizontal: 16,
         paddingVertical: 12,
+        backgroundColor: '#000000',
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 8,
+        borderTopColor: '#1A1A1A',
     },
 
-    confirmButton: {
-        backgroundColor: COLORS.primary,
-        borderRadius: 12,
-        paddingVertical: 16,
+    paymentDoneButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: '#00C896',
+        paddingVertical: 16,
+        borderRadius: 12,
         gap: 8,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
     },
 
-    confirmButtonDisabled: {
-        backgroundColor: COLORS.border,
-        shadowOpacity: 0,
-    },
-
-    confirmButtonText: {
+    paymentDoneButtonText: {
         fontSize: 16,
         fontWeight: '700',
-        color: COLORS.white,
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
+    },
+
+    submitButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#00C896',
+        paddingVertical: 16,
+        borderRadius: 12,
+        gap: 8,
+    },
+
+    submitButtonDisabled: {
+        backgroundColor: '#2A2A2A',
+    },
+
+    submitButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
+    },
+
+    // Success Modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+    },
+
+    successModal: {
+        backgroundColor: '#1A1A1A',
+        borderRadius: 24,
+        padding: 24,
+        width: '100%',
+        maxWidth: 320,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+    },
+
+    // Success Icon
+    successIconContainer: {
+        marginBottom: 20,
+    },
+
+    successIconBackground: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#0D2B24',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#2fda0cff',
+    },
+
+    // Success Text
+    successTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#3daf23ff',
+        marginBottom: 12,
+        textAlign: 'center',
         letterSpacing: 0.5,
     },
 
-    processingContainer: {
+    successMessage: {
+        fontSize: 12,
+        color: '#c9e4c7ff',
+        textAlign: 'center',
+        marginBottom: 20,
+        lineHeight: 20,
+    },
+
+    // UTR Display
+    utrDisplayBox: {
+        backgroundColor: '#0D2B24',
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#00C896',
+        width: '100%',
+    },
+
+    utrDisplayLabel: {
+        fontSize: 11,
+        color: '#00C896',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+
+    utrDisplayValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#00C896',
+        letterSpacing: 1,
+    },
+
+    // Info Box
+    infoBox: {
+        width: '100%',
+        marginBottom: 16,
+        gap: 12,
+    },
+
+    infoItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#0D2B24',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+        gap: 12,
+    },
+
+    infoIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#1A1A1A',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    infoContent: {
+        flex: 1,
+    },
+
+    infoTitle: {
+        fontSize: 12,
+        color: '#999999',
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+
+    infoText: {
+        fontSize: 13,
+        color: '#FFFFFF',
+        fontWeight: '700',
+    },
+
+    // Note Box
+    noteBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#1A2535',
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#2A3F5A',
         gap: 8,
+    },
+
+    noteText: {
+        flex: 1,
+        fontSize: 12,
+        color: '#B3D9FF',
+        lineHeight: 16,
+        fontWeight: '500',
+    },
+
+    // Close Button
+    closeButton: {
+        backgroundColor: '#00C896',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+
+    closeButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
     },
 });
 
